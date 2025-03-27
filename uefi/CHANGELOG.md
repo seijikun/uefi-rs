@@ -8,6 +8,7 @@
 - Added `mem::AlignedBuffer`.
 - Added `proto::scsi::pass_thru::ExtScsiPassThru`.
 - Added `proto::ata::pass_thru::AtaPassThru`.
+- Added `proto::nvme::pass_thru::NvmePassThru`.
 
 ## Changed
 - **Breaking:** Removed `BootPolicyError` as `BootPolicy` construction is no
