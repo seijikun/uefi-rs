@@ -7,6 +7,7 @@
 - Added `proto::media::disk_info::DiskInfo`.
 - Added `mem::AlignedBuffer`.
 - Added `proto::scsi::pass_thru::ExtScsiPassThru`.
+- Added `proto::ata::pass_thru::AtaPassThru`.
 
 ## Changed
 - **Breaking:** Removed `BootPolicyError` as `BootPolicy` construction is no
