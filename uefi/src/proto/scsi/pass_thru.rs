@@ -4,10 +4,13 @@
 
 use super::{ScsiRequest, ScsiResponse};
 use crate::helpers::AlignedBuffer;
+use crate::mem::PoolAllocation;
+use crate::proto::device_path::PoolDevicePathNode;
 use crate::proto::unsafe_protocol;
 use crate::StatusExt;
 use core::alloc::LayoutError;
-use core::ptr;
+use core::ptr::{self, NonNull};
+use uefi_raw::protocol::device_path::DevicePathProtocol;
 use uefi_raw::protocol::scsi::{
     ExtScsiPassThruMode, ExtScsiPassThruProtocol, SCSI_TARGET_MAX_BYTES,
 };
@@ -161,6 +164,25 @@ impl ScsiDevice<'_> {
         unsafe {
             (self.proto.reset_target_lun)(self.proto_mut(), self.target_lun.0.as_ptr(), self.lun())
                 .to_result()
+        }
+    }
+
+    /// Get the final device path node for this device.
+    ///
+    /// For a full [`DevicePath`] pointing to this device, this needs to be appended to
+    /// the controller's device path.
+    pub fn path_node(&self) -> crate::Result<PoolDevicePathNode> {
+        unsafe {
+            let mut path_ptr: *const DevicePathProtocol = ptr::null();
+            (self.proto.build_device_path)(
+                self.proto,
+                self.target().as_ptr(),
+                self.lun(),
+                &mut path_ptr,
+            ).to_result()?;
+            NonNull::new(path_ptr.cast_mut())
+                .map(|p| PoolDevicePathNode(PoolAllocation::new(p.cast())))
+                .ok_or(Status::OUT_OF_RESOURCES.into())
         }
     }
 

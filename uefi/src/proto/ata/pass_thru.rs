@@ -4,11 +4,14 @@
 
 use super::{AtaRequest, AtaResponse};
 use crate::helpers::AlignedBuffer;
+use crate::mem::PoolAllocation;
+use crate::proto::device_path::PoolDevicePathNode;
 use crate::StatusExt;
 use core::alloc::LayoutError;
-use core::ptr;
+use core::ptr::{self, NonNull};
 use uefi_macros::unsafe_protocol;
 use uefi_raw::protocol::ata::AtaPassThruProtocol;
+use uefi_raw::protocol::device_path::DevicePathProtocol;
 use uefi_raw::Status;
 
 /// TODO: docs
@@ -122,6 +125,25 @@ impl AtaDevice<'_> {
     #[must_use]
     pub const fn port_multiplier_port(&self) -> u16 {
         self.pmp
+    }
+
+    /// Get the final device path node for this device.
+    ///
+    /// For a full [`DevicePath`] pointing to this device, this needs to be appended to
+    /// the controller's device path.
+    pub fn path_node(&self) -> crate::Result<PoolDevicePathNode> {
+        unsafe {
+            let mut path_ptr: *const DevicePathProtocol = ptr::null();
+            (self.proto.build_device_path)(
+                self.proto,
+                self.port,
+                self.pmp,
+                &mut path_ptr,
+            ).to_result()?;
+            NonNull::new(path_ptr.cast_mut())
+                .map(|p| PoolDevicePathNode(PoolAllocation::new(p.cast())))
+                .ok_or(Status::OUT_OF_RESOURCES.into())
+        }
     }
 
     /// Resets the ATA device.
