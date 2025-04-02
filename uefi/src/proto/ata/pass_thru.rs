@@ -3,7 +3,7 @@
 //! ATA Pass Thru Protocol.
 
 use super::{AtaRequest, AtaResponse};
-use crate::helpers::AlignedBuffer;
+use crate::mem::AlignedBuffer;
 use crate::mem::PoolAllocation;
 use crate::proto::device_path::PoolDevicePathNode;
 use crate::StatusExt;
@@ -66,7 +66,7 @@ impl AtaPassThru {
     /// # Errors
     /// This method can fail due to alignment or memory allocation issues.
     pub fn alloc_io_buffer(&self, len: usize) -> Result<AlignedBuffer, LayoutError> {
-        AlignedBuffer::alloc(len, self.io_align() as usize)
+        AlignedBuffer::from_size_align(len, self.io_align() as usize)
     }
 
     /// Iterate over all potential ATA devices on this channel.

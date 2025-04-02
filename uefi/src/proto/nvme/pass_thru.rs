@@ -3,7 +3,7 @@
 //! NVM Express Pass Thru Protocol.
 
 use super::{NvmeRequest, NvmeResponse};
-use crate::helpers::AlignedBuffer;
+use crate::mem::AlignedBuffer;
 use crate::StatusExt;
 use core::alloc::LayoutError;
 use core::ptr;
@@ -67,7 +67,7 @@ impl NvmePassThru {
     /// # Errors
     /// This method can fail due to alignment or memory allocation issues.
     pub fn alloc_io_buffer(&self, len: usize) -> Result<AlignedBuffer, LayoutError> {
-        AlignedBuffer::alloc(len, self.io_align() as usize)
+        AlignedBuffer::from_size_align(len, self.io_align() as usize)
     }
 
     /// Iterate over all valid namespaces on this NVMe controller.

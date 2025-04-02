@@ -2,7 +2,7 @@
 
 //! ATA Protocols.
 
-use crate::helpers::{AlignedBuffer, AlignmentError};
+use crate::mem::{AlignedBuffer, AlignmentError};
 use core::alloc::LayoutError;
 use core::marker::PhantomData;
 use core::ptr;
@@ -58,7 +58,7 @@ impl<'a> AtaRequestBuilder<'a> {
         protocol: AtaPassThruCommandProtocol,
     ) -> Result<Self, LayoutError> {
         // status block has alignment requirements!
-        let mut asb = AlignedBuffer::alloc(size_of::<AtaStatusBlock>(), io_align as usize)?;
+        let mut asb = AlignedBuffer::from_size_align(size_of::<AtaStatusBlock>(), io_align as usize)?;
         Ok(Self {
             req: AtaRequest {
                 io_align,
@@ -208,7 +208,7 @@ impl<'a> AtaRequestBuilder<'a> {
         bfr.check_alignment(self.req.io_align as usize)?;
         self.req.in_data_buffer = None;
         self.req.packet.in_data_buffer = bfr.ptr_mut().cast();
-        self.req.packet.in_transfer_length = bfr.len() as u32;
+        self.req.packet.in_transfer_length = bfr.size() as u32;
         Ok(self)
     }
 
@@ -220,9 +220,9 @@ impl<'a> AtaRequestBuilder<'a> {
     /// # Returns
     /// `Result<Self, LayoutError>` indicating success or a memory allocation error.
     pub fn with_read_buffer(mut self, len: usize) -> Result<Self, LayoutError> {
-        let mut bfr = AlignedBuffer::alloc(len, self.req.io_align as usize)?;
+        let mut bfr = AlignedBuffer::from_size_align(len, self.req.io_align as usize)?;
         self.req.packet.in_data_buffer = bfr.ptr_mut().cast();
-        self.req.packet.in_transfer_length = bfr.len() as u32;
+        self.req.packet.in_transfer_length = bfr.size() as u32;
         self.req.in_data_buffer = Some(bfr);
         Ok(self)
     }
@@ -246,7 +246,7 @@ impl<'a> AtaRequestBuilder<'a> {
         bfr.check_alignment(self.req.io_align as usize)?;
         self.req.out_data_buffer = None;
         self.req.packet.out_data_buffer = bfr.ptr_mut().cast();
-        self.req.packet.out_transfer_length = bfr.len() as u32;
+        self.req.packet.out_transfer_length = bfr.size() as u32;
         Ok(self)
     }
 
@@ -259,10 +259,10 @@ impl<'a> AtaRequestBuilder<'a> {
     /// # Returns
     /// `Result<Self, LayoutError>` indicating success or a memory allocation error.
     pub fn with_write_data(mut self, data: &[u8]) -> Result<Self, LayoutError> {
-        let mut bfr = AlignedBuffer::alloc(data.len(), self.req.io_align as usize)?;
-        bfr.copy_from(data);
+        let mut bfr = AlignedBuffer::from_size_align(data.len(), self.req.io_align as usize)?;
+        bfr.copy_from_slice(data);
         self.req.packet.out_data_buffer = bfr.ptr_mut().cast();
-        self.req.packet.out_transfer_length = bfr.len() as u32;
+        self.req.packet.out_transfer_length = bfr.size() as u32;
         self.req.out_data_buffer = Some(bfr);
         Ok(self)
     }

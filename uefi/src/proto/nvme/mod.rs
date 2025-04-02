@@ -2,7 +2,7 @@
 
 //! NVM Express Protocols.
 
-use crate::helpers::{AlignedBuffer, AlignmentError};
+use crate::mem::{AlignedBuffer, AlignmentError};
 use core::alloc::LayoutError;
 use core::marker::PhantomData;
 use core::ptr;
@@ -137,7 +137,7 @@ impl<'a> NvmeRequestBuilder<'a> {
         bfr.check_alignment(self.req.io_align as usize)?;
         self.req.transfer_buffer = None;
         self.req.packet.transfer_buffer = bfr.ptr_mut().cast();
-        self.req.packet.transfer_length = bfr.len() as u32;
+        self.req.packet.transfer_length = bfr.size() as u32;
         Ok(self)
     }
 
@@ -149,9 +149,9 @@ impl<'a> NvmeRequestBuilder<'a> {
     /// # Returns
     /// `Result<Self, LayoutError>` indicating success or a memory allocation error.
     pub fn with_transfer_buffer(mut self, len: usize) -> Result<Self, LayoutError> {
-        let mut bfr = AlignedBuffer::alloc(len, self.req.io_align as usize)?;
+        let mut bfr = AlignedBuffer::from_size_align(len, self.req.io_align as usize)?;
         self.req.packet.transfer_buffer = bfr.ptr_mut().cast();
-        self.req.packet.transfer_length = bfr.len() as u32;
+        self.req.packet.transfer_length = bfr.size() as u32;
         self.req.transfer_buffer = Some(bfr);
         Ok(self)
     }
@@ -178,7 +178,7 @@ impl<'a> NvmeRequestBuilder<'a> {
         bfr.check_alignment(self.req.io_align as usize)?;
         self.req.meta_data_buffer = None;
         self.req.packet.meta_data_buffer = bfr.ptr_mut().cast();
-        self.req.packet.meta_data_length = bfr.len() as u32;
+        self.req.packet.meta_data_length = bfr.size() as u32;
         Ok(self)
     }
 
@@ -190,9 +190,9 @@ impl<'a> NvmeRequestBuilder<'a> {
     /// # Returns
     /// `Result<Self, LayoutError>` indicating success or a memory allocation error.
     pub fn with_metadata_buffer(mut self, len: usize) -> Result<Self, LayoutError> {
-        let mut bfr = AlignedBuffer::alloc(len, self.req.io_align as usize)?;
+        let mut bfr = AlignedBuffer::from_size_align(len, self.req.io_align as usize)?;
         self.req.packet.meta_data_buffer = bfr.ptr_mut().cast();
-        self.req.packet.meta_data_length = bfr.len() as u32;
+        self.req.packet.meta_data_length = bfr.size() as u32;
         self.req.meta_data_buffer = Some(bfr);
         Ok(self)
     }

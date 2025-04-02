@@ -2,7 +2,7 @@
 
 //! SCSI Bus specific protocols.
 
-use crate::helpers::{AlignedBuffer, AlignmentError};
+use crate::mem::{AlignedBuffer, AlignmentError};
 use core::alloc::LayoutError;
 use core::marker::PhantomData;
 use core::ptr;
@@ -150,7 +150,7 @@ impl<'a> ScsiRequestBuilder<'a> {
         bfr.check_alignment(self.req.io_align as usize)?;
         self.req.in_data_buffer = None;
         self.req.packet.in_data_buffer = bfr.ptr_mut().cast();
-        self.req.packet.in_transfer_length = bfr.len() as u32;
+        self.req.packet.in_transfer_length = bfr.size() as u32;
         Ok(self)
     }
 
@@ -162,9 +162,9 @@ impl<'a> ScsiRequestBuilder<'a> {
     /// # Returns
     /// `Result<Self, LayoutError>` indicating success or a memory allocation error.
     pub fn with_read_buffer(mut self, len: usize) -> Result<Self, LayoutError> {
-        let mut bfr = AlignedBuffer::alloc(len, self.req.io_align as usize)?;
+        let mut bfr = AlignedBuffer::from_size_align(len, self.req.io_align as usize)?;
         self.req.packet.in_data_buffer = bfr.ptr_mut().cast();
-        self.req.packet.in_transfer_length = bfr.len() as u32;
+        self.req.packet.in_transfer_length = bfr.size() as u32;
         self.req.in_data_buffer = Some(bfr);
         Ok(self)
     }
@@ -180,7 +180,7 @@ impl<'a> ScsiRequestBuilder<'a> {
     /// # Returns
     /// `Result<Self, LayoutError>` indicating success or a memory allocation error.
     pub fn with_sense_buffer(mut self, len: u8) -> Result<Self, LayoutError> {
-        let mut bfr = AlignedBuffer::alloc(len as usize, self.req.io_align as usize)?;
+        let mut bfr = AlignedBuffer::from_size_align(len as usize, self.req.io_align as usize)?;
         self.req.packet.sense_data = bfr.ptr_mut().cast();
         self.req.packet.sense_data_length = len;
         self.req.sense_data_buffer = Some(bfr);
@@ -206,7 +206,7 @@ impl<'a> ScsiRequestBuilder<'a> {
         bfr.check_alignment(self.req.io_align as usize)?;
         self.req.out_data_buffer = None;
         self.req.packet.out_data_buffer = bfr.ptr_mut().cast();
-        self.req.packet.out_transfer_length = bfr.len() as u32;
+        self.req.packet.out_transfer_length = bfr.size() as u32;
         Ok(self)
     }
 
@@ -219,10 +219,10 @@ impl<'a> ScsiRequestBuilder<'a> {
     /// # Returns
     /// `Result<Self, LayoutError>` indicating success or a memory allocation error.
     pub fn with_write_data(mut self, data: &[u8]) -> Result<Self, LayoutError> {
-        let mut bfr = AlignedBuffer::alloc(data.len(), self.req.io_align as usize)?;
-        bfr.copy_from(data);
+        let mut bfr = AlignedBuffer::from_size_align(data.len(), self.req.io_align as usize)?;
+        bfr.copy_from_slice(data);
         self.req.packet.out_data_buffer = bfr.ptr_mut().cast();
-        self.req.packet.out_transfer_length = bfr.len() as u32;
+        self.req.packet.out_transfer_length = bfr.size() as u32;
         self.req.out_data_buffer = Some(bfr);
         Ok(self)
     }
@@ -244,12 +244,12 @@ impl<'a> ScsiRequestBuilder<'a> {
         mut self,
         data: &'a mut AlignedBuffer,
     ) -> Result<Self, AlignmentError> {
-        assert!(data.len() <= 255);
+        assert!(data.size() <= 255);
         // check alignment of externally supplied buffer
         data.check_alignment(self.req.io_align as usize)?;
         self.req.cdb_buffer = None;
         self.req.packet.cdb = data.ptr_mut().cast();
-        self.req.packet.cdb_length = data.len() as u8;
+        self.req.packet.cdb_length = data.size() as u8;
         Ok(self)
     }
 
@@ -266,10 +266,10 @@ impl<'a> ScsiRequestBuilder<'a> {
     /// The maximum length of a CDB is 255 bytes.
     pub fn with_command_data(mut self, data: &[u8]) -> Result<Self, LayoutError> {
         assert!(data.len() <= 255);
-        let mut bfr = AlignedBuffer::alloc(data.len(), self.req.io_align as usize)?;
-        bfr.copy_from(data);
+        let mut bfr = AlignedBuffer::from_size_align(data.len(), self.req.io_align as usize)?;
+        bfr.copy_from_slice(data);
         self.req.packet.cdb = bfr.ptr_mut().cast();
-        self.req.packet.cdb_length = bfr.len() as u8;
+        self.req.packet.cdb_length = bfr.size() as u8;
         self.req.cdb_buffer = Some(bfr);
         Ok(self)
     }
