@@ -18,6 +18,7 @@
 - Added `UsbIoProtocol`.
 - Added `Usb2HostControllerProtocol`.
 - Added  `DevicePathProtocol::length()` properly constructing the `u16` value
+- Added `AllocateType`.
 
 ## Changed
 - `DevicePathProtocol` now derives
