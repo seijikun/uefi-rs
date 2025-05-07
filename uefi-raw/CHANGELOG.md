@@ -19,6 +19,7 @@
 - Added `Usb2HostControllerProtocol`.
 - Added  `DevicePathProtocol::length()` properly constructing the `u16` value
 - Added `AllocateType`.
+- Added `PciRootBridgeIoProtocol`.
 
 ## Changed
 - `DevicePathProtocol` now derives
